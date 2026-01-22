@@ -35,7 +35,7 @@ export class GeminiService {
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview', // High-quality image generation capable model
+      model: 'gemini-3-pro-image-preview',
       contents: { parts },
       config: {
         tools: [{ googleSearch: {} }],
@@ -96,6 +96,34 @@ export class GeminiService {
     };
   }
 
+  async summarizeProjectConversation(history: string, liveTranscript?: string) {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+    const fullContext = `PROJECT HISTORY:\n${history}\n\nLIVE CALL TRANSCRIPT:\n${liveTranscript || 'No live call recorded.'}`;
+    
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: fullContext,
+      config: {
+        systemInstruction: `You are an objective recording clerk for BuildSync. 
+        Your task is to create a "Build Record Summary" that is STRICTLY factual based ONLY on the provided conversation.
+
+        STRICT CONSTRAINTS:
+        1. DO NOT add any information, tools, or steps that were not explicitly mentioned in the conversation history or transcript.
+        2. DO NOT make assumptions about materials, costs, or future steps.
+        3. DO NOT use your own knowledge to fill in gaps. If it wasn't said, it doesn't exist in the record.
+        4. Focus solely on summarizing what the client, AI, and expert actually communicated.
+        5. Use a professional, neutral tone.
+
+        Output Format:
+        - **CONVERSATION OVERVIEW**: Summary of the main topics discussed.
+        - **TECHNICAL POINTS**: Specific technical details or advice given by the AI or Expert.
+        - **DECISIONS MADE**: Any final agreements or specific steps the client decided to take.
+        - **LISTED ASSETS**: Only files or specific items mentioned in the dialogue.`,
+      }
+    });
+    return response.text;
+  }
+
   async summarizeExpertConversation(transcript: string, expertName: string) {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     const response = await ai.models.generateContent({
@@ -112,25 +140,6 @@ export class GeminiService {
       }
     });
     return response.text;
-  }
-
-  async generateVisualization(prompt: string): Promise<string | undefined> {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [{ text: `A high-quality 3D architectural render or realistic photo of: ${prompt}. Professional construction visualization.` }]
-      },
-      config: {
-        imageConfig: { aspectRatio: "16:9" }
-      }
-    });
-    if (response.candidates?.[0]?.content?.parts) {
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
-      }
-    }
-    return undefined;
   }
 }
 
