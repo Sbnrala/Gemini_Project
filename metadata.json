@@ -1,0 +1,8 @@
+{
+  "name": "BuildSync AI",
+  "description": "A comprehensive platform connecting DIY enthusiasts with professional builders, featuring AI-powered project guidance, professional directories, and generative visualization tools.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
